@@ -160,7 +160,7 @@ def plot_binned_metric(feature_array, bins, xlabel, ylabel, title, metric_type='
         
         # Only plot bins that have a statistically useful number of galaxies
         if mask.sum() > 10:
-            bin_centers.append(f"{bins[i]:.2f}-{bins[i+1]:.2f}")
+            bin_centers.append(f"{bins[i]:.4f}-{bins[i+1]:.4f}")
             
             # Calculate the appropriate metric for the y-axis
             if metric_type == 'nmad':
