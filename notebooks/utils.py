@@ -15,9 +15,14 @@ def nmad(z_pred, z_true):
     dz = delta_z(z_pred, z_true)    
     return 1.4826 * np.median(np.abs(dz - np.median(dz)))
     
-def outlier_fraction(z_pred, z_true, threshold=0.05):
+def outlier_fraction(z_pred, z_true):
     dz = delta_z(z_pred, z_true)
-    return np.mean(np.abs(dz) > threshold)
+    return np.mean(np.abs(dz) > 0.05)
+
+def metrics(z_pred, z_true):
+    print(f"Outlier Fraction: {outlier_fraction(z_pred, z_true):.16f}")
+    print(f"Bias:             {bias(z_pred, z_true):.16f}")
+    print(f"NMAD:             {nmad(z_pred, z_true):.16f}")
 
 def plot_side_by_side_diagnostics(search, param_name, suptitle, xlabel_text, log=False):
     """Extract and plot the CV and Train scores side-by-side for a single hyperparameter."""
@@ -77,7 +82,7 @@ def plot_side_by_side_diagnostics(search, param_name, suptitle, xlabel_text, log
 
 def optimize_hyper_params(base_model, X_tune, y_tune, param_grid, grid__random):
     total_runtime = 0
-    cores = -3
+    cores = -4
 
     if(grid__random == 'random'):
         # Initialize RandomizedSearchCV object
@@ -144,22 +149,35 @@ def binned_metrics(z_pred, z_true, bin_edges, label):
         print(f"{lo:.2f}-{hi:.2f}   {n:<10}{bias(zp, zt):<25.16f}{nmad(zp, zt):<25.16f}{outlier_fraction(zp, zt):<25.16f}")
     print("\n")
 
-def plot_nmad_vs_bin(z_pred, z_true, bin_edges, title):
-    bin_labels, nmads = [], []
-    for i in range(len(bin_edges) - 1):
-        lo, hi = bin_edges[i], bin_edges[i + 1]
-        mask = (z_true >= lo) & (z_true < hi)
-        if mask.sum() == 0:
-            continue
-        bin_labels.append(f"{lo:.2f}-{hi:.2f}")
-        nmads.append(nmad(z_pred[mask], z_true[mask]))
-
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.plot(bin_labels, nmads, marker='o', color='navy')
-    ax.grid(True, linestyle='--', color='lightgray', alpha=0.8)
-    ax.set_xlabel('Redshift bin')
-    ax.set_ylabel('NMAD')
-    ax.set_title(title)
+def plot_binned_metric(feature_array, bins, xlabel, ylabel, title, metric_type='nmad', z_pred=None, z_true=None, width_array=None):
+    import matplotlib.pyplot as plt
+    
+    bin_centers = []
+    y_values = []
+    
+    for i in range(len(bins)-1):
+        mask = (feature_array >= bins[i]) & (feature_array < bins[i+1])
+        
+        # Only plot bins that have a statistically useful number of galaxies
+        if mask.sum() > 10:
+            bin_centers.append(f"{bins[i]:.2f}-{bins[i+1]:.2f}")
+            
+            # Calculate the appropriate metric for the y-axis
+            if metric_type == 'nmad':
+                y_values.append(nmad(z_pred[mask], z_true[mask]))
+            elif metric_type == 'width':
+                y_values.append(width_array[mask].mean())
+                
+    plt.figure(figsize=(7, 4))
+    
+    # Navy for accuracy, maroon for uncertainty
+    line_color = 'navy' if metric_type == 'nmad' else 'maroon'
+    
+    plt.plot(bin_centers, y_values, marker='o', color=line_color)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
     plt.xticks(rotation=45)
+    plt.grid(True, linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
