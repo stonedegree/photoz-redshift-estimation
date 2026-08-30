@@ -136,16 +136,22 @@ def optimize_hyper_params(base_model, X_tune, y_tune, param_grid, grid__random):
     # Return the search (for plot), best hyperparameters, and best rmse
     return (search, search.best_params_, search.best_score_)
 
-def binned_metrics(z_pred, z_true, bin_edges, label):
+def binned_metrics(z_pred, z_true, bin_var, bin_edges, label):
     print("-" * 4, label, "-" * 4)
     print(f"{'bin':<12}{'N':<10}{'bias':<25}{'nmad':<25}{'outlier_frac':<25}")
     for i in range(len(bin_edges) - 1):
         lo, hi = bin_edges[i], bin_edges[i + 1]
-        mask = (z_true >= lo) & (z_true < hi)
+        
+        # 1. Create the mask using the new bin_var (e.g., i_mag_val)
+        mask = (bin_var >= lo) & (bin_var < hi)
         n = mask.sum()
+        
         if n == 0:
             continue
+            
+        # 2. Extract the actual redshifts for the math
         zt, zp = z_true[mask], z_pred[mask]
+        
         print(f"{lo:.2f}-{hi:.2f}   {n:<10}{bias(zp, zt):<25.16f}{nmad(zp, zt):<25.16f}{outlier_fraction(zp, zt):<25.16f}")
     print("\n")
 
