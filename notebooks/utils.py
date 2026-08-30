@@ -164,7 +164,7 @@ def plot_binned_metric(feature_array, bins, xlabel, ylabel, title, metric_type='
     for i in range(len(bins)-1):
         mask = (feature_array >= bins[i]) & (feature_array < bins[i+1])
         
-        # Only plot bins that have a statistically useful number of galaxies
+        # Only plot bins that have a useful number of galaxies
         if mask.sum() > 10:
             bin_centers.append(f"{bins[i]:.4f}-{bins[i+1]:.4f}")
             
